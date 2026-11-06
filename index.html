@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#5f6fff">
 <title>My Study App</title>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{--bg:#f4f3ff;--card:#fff;--tx:#23224a;--mu:#76749c;--ac:#5f6fff;--ac2:#c56cf0;--bd:#e3e1fa;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15142b;--card:#232245;--tx:#f1f0ff;--mu:#a3a1d0;--bd:#33316a;color-scheme:dark}}
@@ -149,4 +150,5 @@ function note(m){
   $('#nb').oninput=e=>{n.text=e.target.value;save()};
 }
 render();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
