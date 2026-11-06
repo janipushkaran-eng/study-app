@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5f6fff">
+<title>My Study App</title>
+<style>
+:root{--bg:#f4f3ff;--card:#fff;--tx:#23224a;--mu:#76749c;--ac:#5f6fff;--ac2:#c56cf0;--bd:#e3e1fa;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15142b;--card:#232245;--tx:#f1f0ff;--mu:#a3a1d0;--bd:#33316a;color-scheme:dark}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;align-items:center;gap:10px;padding:14px 16px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff}
+header h1{font-size:20px;margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+header button{background:rgba(255,255,255,.25);color:#fff;border:0;border-radius:12px;font-size:18px;padding:6px 12px}
+main{padding:16px;max-width:640px;margin:auto;padding-bottom:100px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabs button{flex:1;padding:12px;border:0;border-radius:14px;background:var(--card);color:var(--tx);font-size:16px;font-weight:600}
+.tabs button.on{background:var(--ac);color:#fff}
+.item{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:18px;padding:16px;margin-bottom:12px;border-left:8px solid var(--c,var(--ac));box-shadow:0 2px 8px rgba(80,70,160,.1)}
+.item .t{flex:1;min-width:0}.item b{display:block;font-size:17px}.item small{color:var(--mu)}
+.item .t div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ib{border:0;background:var(--bg);color:var(--tx);border-radius:10px;padding:8px 10px;font-size:15px}
+.fab{position:fixed;right:20px;bottom:calc(24px + env(safe-area-inset-bottom,0px));background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:0;border-radius:30px;padding:16px 22px;font-size:17px;font-weight:700;box-shadow:0 6px 18px rgba(95,111,255,.5)}
+.empty{text-align:center;color:var(--mu);padding:40px 10px;line-height:1.6}
+.bigbtn{display:block;width:100%;padding:15px;border:0;border-radius:16px;background:#1dd1a1;color:#073;font-size:18px;font-weight:700;margin-bottom:14px}
+.scene{perspective:1000px;margin:10px 0 16px}
+.flip{position:relative;height:300px;transition:transform .5s;transform-style:preserve-3d}
+.flip.f{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:24px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:22px;line-height:1.4;overflow:auto;box-shadow:0 8px 24px rgba(80,70,160,.25);white-space:pre-wrap;word-break:break-word}
+.face span{font-size:12px;letter-spacing:2px;opacity:.8;margin-bottom:10px}
+.front{background:linear-gradient(135deg,#5f6fff,#c56cf0);color:#fff}
+.back{background:linear-gradient(135deg,#1dd1a1,#48dbfb);color:#053;transform:rotateY(180deg)}
+.nav{display:flex;gap:10px;align-items:center}
+.nav button{flex:1;padding:15px;border:0;border-radius:16px;background:var(--card);color:var(--tx);font-size:18px;font-weight:700}
+.nav .c{flex:0 0 70px;text-align:center;color:var(--mu);font-weight:600}
+.hint{text-align:center;color:var(--mu);font-size:14px;margin-bottom:8px}
+.ov{position:fixed;inset:0;background:rgba(10,8,40,.55);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.md{background:var(--card);width:100%;max-width:640px;border-radius:24px 24px 0 0;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+.md h2{margin:0 0 12px;font-size:19px}
+.md label{display:block;font-size:14px;color:var(--mu);margin:10px 0 4px}
+input,textarea{width:100%;border:2px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:14px;padding:12px;font-size:17px;font-family:inherit}
+textarea{min-height:110px;resize:vertical}
+.row{display:flex;gap:10px;margin-top:16px}
+.row button{flex:1;padding:14px;border:0;border-radius:14px;font-size:17px;font-weight:700}
+.ok{background:var(--ac);color:#fff}.no{background:var(--bg);color:var(--tx)}.del{background:#ff6b6b;color:#fff}
+.dots{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.dots i{width:34px;height:34px;border-radius:50%;border:3px solid transparent}
+.dots i.s{border-color:var(--tx)}
+.ed{min-height:60vh;font-size:18px;line-height:1.5}
+</style></head><body>
+<header><button id="bk" hidden>←</button><h1 id="ti">My Study App</h1><button id="ac" hidden></button></header>
+<main id="m"></main><div id="fab"></div><div id="ov"></div>
+<script>
+const COL=['#ff6b6b','#ff9f43','#feca57','#1dd1a1','#48dbfb','#5f6fff','#c56cf0','#ff6bb5'];
+let D={subjects:[]};
+try{D=JSON.parse(localStorage.getItem('studyapp')||'null')||D}catch(e){}
+const save=()=>{try{localStorage.setItem('studyapp',JSON.stringify(D))}catch(e){}};
+const uid=()=>Math.random().toString(36).slice(2,9);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const $=s=>document.querySelector(s);
+let st={v:'home',tab:'cards'};
+const S=()=>D.subjects.find(x=>x.id===st.s);
+const K=()=>S().decks.find(x=>x.id===st.d);
+const go=o=>{st={...st,...o};render()};
+
+function modal(title,fields,onOk,danger){
+  $('#ov').innerHTML=`<div class="ov"><div class="md"><h2>${esc(title)}</h2>${fields.map((f,i)=>f.color?`<label>Colour</label><div class="dots" id="dots">${COL.map(c=>`<i data-c="${c}" style="background:${c}" class="${c===f.val?'s':''}"></i>`).join('')}</div>`:`<label>${esc(f.label)}</label>${f.multi?`<textarea id="f${i}">${esc(f.val||'')}</textarea>`:`<input id="f${i}" value="${esc(f.val||'')}">`}`).join('')}<div class="row"><button class="no" id="mc">Cancel</button><button class="${danger?'del':'ok'}" id="mo">${danger?'Delete':'Save'}</button></div></div></div>`;
+  let col=(fields.find(f=>f.color)||{}).val;
+  document.querySelectorAll('#dots i').forEach(e=>e.onclick=()=>{col=e.dataset.c;document.querySelectorAll('#dots i').forEach(x=>x.classList.toggle('s',x===e))});
+  $('#mc').onclick=()=>$('#ov').innerHTML='';
+  $('#mo').onclick=()=>{const v=fields.map((f,i)=>f.color?col:($('#f'+i)||{}).value);if(!danger&&!String(v[0]).trim())return;$('#ov').innerHTML='';onOk(v);save();render()};
+  const f0=$('#f0');if(f0)setTimeout(()=>f0.focus(),50);
+}
+const confirmDel=(msg,fn)=>modal(msg,[],fn,true);
+
+function head(title,back,act,fn){
+  $('#ti').textContent=title;
+  const b=$('#bk');b.hidden=!back;b.onclick=back||null;
+  const a=$('#ac');a.hidden=!act;a.textContent=act||'';a.onclick=fn||null;
+}
+function fab(label,fn){$('#fab').innerHTML=label?`<button class="fab" id="fb">${label}</button>`:'';if(label)$('#fb').onclick=fn}
+
+function render(){
+  const m=$('#m');m.scrollTop=0;
+  if(st.v==='home')home(m);
+  else if(st.v==='subject')subject(m);
+  else if(st.v==='deck')deck(m);
+  else if(st.v==='study')study(m);
+  else if(st.v==='note')note(m);
+}
+
+function home(m){
+  head('My Subjects');
+  m.innerHTML=D.subjects.length?D.subjects.map(s=>`<div class="item" style="--c:${s.color}" data-id="${s.id}"><div class="t"><b>${esc(s.name)}</b><small>${s.decks.length} flashcard files · ${s.notes.length} notes</small></div><button class="ib" data-e="${s.id}">✎</button></div>`).join(''):`<div class="empty">No subjects yet.<br>Tap “+ Subject” to make your first one, like Maths or Biology.</div>`;
+  m.querySelectorAll('.item').forEach(e=>e.onclick=ev=>{if(ev.target.dataset.e)return;go({v:'subject',s:e.dataset.id,tab:'cards'})});
+  m.querySelectorAll('[data-e]').forEach(e=>e.onclick=()=>{const s=D.subjects.find(x=>x.id===e.dataset.e);
+    modal('Edit subject',[{label:'Subject name',val:s.name},{color:1,val:s.color}],v=>{s.name=v[0].trim();s.color=v[1]});
+    const r=document.createElement('button');r.className='no';r.textContent='Delete subject';r.style.cssText='width:100%;margin-top:10px;padding:12px;border:0;border-radius:14px;color:#ff6b6b;font-size:16px';r.onclick=()=>confirmDel('Delete “'+s.name+'” and everything in it?',()=>{D.subjects=D.subjects.filter(x=>x!==s)});$('.md').appendChild(r)});
+  fab('+ Subject',()=>modal('New subject',[{label:'Subject name'},{color:1,val:COL[Math.floor(Math.random()*COL.length)]}],v=>D.subjects.push({id:uid(),name:v[0].trim(),color:v[1],decks:[],notes:[]})));
+}
+
+function subject(m){
+  const s=S();head(s.name,()=>go({v:'home'}));
+  const c=st.tab==='cards';
+  let h=`<div class="tabs"><button class="${c?'on':''}" data-t="cards">🃏 Flashcards</button><button class="${c?'':'on'}" data-t="notes">📝 Notes</button></div>`;
+  if(c)h+=s.decks.length?s.decks.map(d=>`<div class="item" style="--c:${s.color}" data-id="${d.id}"><div class="t"><b>${esc(d.name)}</b><small>${d.cards.length} cards</small></div><button class="ib" data-e="${d.id}">✎</button></div>`).join(''):`<div class="empty">No flashcard files yet.<br>Tap “+ File” to make one.</div>`;
+  else h+=s.notes.length?s.notes.map(n=>`<div class="item" style="--c:${s.color}" data-id="${n.id}"><div class="t"><b>${esc(n.title||'Untitled')}</b><div><small>${esc((n.text||'').slice(0,60))||'Empty note'}</small></div></div><button class="ib" data-e="${n.id}">✕</button></div>`).join(''):`<div class="empty">No notes yet.<br>Tap “+ Note” to write one.</div>`;
+  m.innerHTML=h;
+  m.querySelectorAll('[data-t]').forEach(e=>e.onclick=()=>go({tab:e.dataset.t}));
+  m.querySelectorAll('.item').forEach(e=>e.onclick=ev=>{if(ev.target.dataset.e)return;go(c?{v:'deck',d:e.dataset.id}:{v:'note',n:e.dataset.id})});
+  m.querySelectorAll('[data-e]').forEach(e=>e.onclick=()=>{
+    if(c){const d=s.decks.find(x=>x.id===e.dataset.e);modal('Edit file',[{label:'File name',val:d.name}],v=>d.name=v[0].trim());
+      const r=document.createElement('button');r.textContent='Delete file';r.style.cssText='width:100%;margin-top:10px;padding:12px;border:0;border-radius:14px;background:none;color:#ff6b6b;font-size:16px';r.onclick=()=>confirmDel('Delete this file and its cards?',()=>{s.decks=s.decks.filter(x=>x!==d)});$('.md').appendChild(r)}
+    else{const n=s.notes.find(x=>x.id===e.dataset.e);confirmDel('Delete this note?',()=>{s.notes=s.notes.filter(x=>x!==n)})}});
+  fab(c?'+ File':'+ Note',()=>{
+    if(c)modal('New flashcard file',[{label:'File name (example: Chapter 1)'}],v=>s.decks.push({id:uid(),name:v[0].trim(),cards:[]}));
+    else{const n={id:uid(),title:'',text:''};s.notes.unshift(n);save();go({v:'note',n:n.id})}});
+}
+
+function deck(m){
+  const s=S(),d=K();head(d.name,()=>go({v:'subject',tab:'cards'}));
+  let h=d.cards.length?`<button class="bigbtn" id="st">▶ Start revision (${d.cards.length})</button>`:'';
+  h+=d.cards.length?d.cards.map(c=>`<div class="item" style="--c:${s.color}" data-id="${c.id}"><div class="t"><b>${esc(c.q)}</b><div><small>${esc(c.a)}</small></div></div><button class="ib" data-x="${c.id}">✕</button></div>`).join(''):`<div class="empty">No cards yet.<br>Tap “+ Card” to add a question and answer.</div>`;
+  m.innerHTML=h;
+  const b=$('#st');if(b)b.onclick=()=>go({v:'study',i:0,f:false,order:d.cards.map(c=>c.id)});
+  m.querySelectorAll('.item').forEach(e=>e.onclick=ev=>{
+    const c=d.cards.find(x=>x.id===e.dataset.id);
+    if(ev.target.dataset.x)return confirmDel('Delete this card?',()=>{d.cards=d.cards.filter(x=>x!==c)});
+    modal('Edit card',[{label:'Question',val:c.q,multi:1},{label:'Answer',val:c.a,multi:1}],v=>{c.q=v[0].trim();c.a=v[1].trim()})});
+  fab('+ Card',()=>modal('New card',[{label:'Question',multi:1},{label:'Answer',multi:1}],v=>d.cards.push({id:uid(),q:v[0].trim(),a:(v[1]||'').trim()})));
+}
+
+function study(m){
+  const d=K();head(d.name,()=>go({v:'deck'}),'🔀',()=>{st.order.sort(()=>Math.random()-.5);go({i:0,f:false})});fab();
+  const c=d.cards.find(x=>x.id===st.order[st.i]);
+  if(!c){go({v:'deck'});return}
+  m.innerHTML=`<div class="hint">Tap the card to flip · swipe left or right</div><div class="scene"><div class="flip ${st.f?'f':''}" id="fl"><div class="face front"><span>QUESTION</span>${esc(c.q)}</div><div class="face back"><span>ANSWER</span>${esc(c.a)}</div></div></div><div class="nav"><button id="pv">←</button><div class="c">${st.i+1} / ${st.order.length}</div><button id="nx">→</button></div>`;
+  const mv=n=>{const i=st.i+n;if(i<0||i>=st.order.length)return;go({i,f:false})};
+  $('#fl').onclick=()=>{st.f=!st.f;$('#fl').classList.toggle('f',st.f)};
+  $('#pv').onclick=()=>mv(-1);$('#nx').onclick=()=>mv(1);
+  let x0=null;m.ontouchstart=e=>x0=e.touches[0].clientX;
+  m.ontouchend=e=>{if(x0===null)return;const dx=e.changedTouches[0].clientX-x0;x0=null;if(Math.abs(dx)>60)mv(dx<0?1:-1)};
+}
+
+function note(m){
+  const s=S(),n=s.notes.find(x=>x.id===st.n);fab();
+  head('Note',()=>{if(!n.title&&!n.text)s.notes=s.notes.filter(x=>x!==n);save();go({v:'subject',tab:'notes'})});
+  m.innerHTML=`<input id="nt" placeholder="Title" value="${esc(n.title)}" style="font-weight:700;margin-bottom:12px"><textarea id="nb" class="ed" placeholder="Type your notes here...">${esc(n.text)}</textarea>`;
+  $('#nt').oninput=e=>{n.title=e.target.value;save()};
+  $('#nb').oninput=e=>{n.text=e.target.value;save()};
+}
+render();
+</script></body></html>
