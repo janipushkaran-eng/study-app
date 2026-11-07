@@ -92,11 +92,35 @@ function render(){
 function home(m){
   head('My Subjects');
   m.innerHTML=D.subjects.length?D.subjects.map(s=>`<div class="item" style="--c:${s.color}" data-id="${s.id}"><div class="t"><b>${esc(s.name)}</b><small>${s.decks.length} flashcard files · ${s.notes.length} notes</small></div><button class="ib" data-e="${s.id}">✎</button></div>`).join(''):`<div class="empty">No subjects yet.<br>Tap “+ Subject” to make your first one, like Maths or Biology.</div>`;
+  m.insertAdjacentHTML('beforeend','<div class="row" style="margin-top:24px"><button id="ex" style="background:var(--card);color:var(--tx)">⬇ Export backup</button><button id="im" style="background:var(--card);color:var(--tx)">⬆ Import backup</button></div><input type="file" id="fi" accept=".json,application/json" hidden>');
+  $('#ex').onclick=exportData;$('#im').onclick=()=>$('#fi').click();$('#fi').onchange=importData;
   m.querySelectorAll('.item').forEach(e=>e.onclick=ev=>{if(ev.target.dataset.e)return;go({v:'subject',s:e.dataset.id,tab:'cards'})});
   m.querySelectorAll('[data-e]').forEach(e=>e.onclick=()=>{const s=D.subjects.find(x=>x.id===e.dataset.e);
     modal('Edit subject',[{label:'Subject name',val:s.name},{color:1,val:s.color}],v=>{s.name=v[0].trim();s.color=v[1]});
     const r=document.createElement('button');r.className='no';r.textContent='Delete subject';r.style.cssText='width:100%;margin-top:10px;padding:12px;border:0;border-radius:14px;color:#ff6b6b;font-size:16px';r.onclick=()=>confirmDel('Delete “'+s.name+'” and everything in it?',()=>{D.subjects=D.subjects.filter(x=>x!==s)});$('.md').appendChild(r)});
   fab('+ Subject',()=>modal('New subject',[{label:'Subject name'},{color:1,val:COL[Math.floor(Math.random()*COL.length)]}],v=>D.subjects.push({id:uid(),name:v[0].trim(),color:v[1],decks:[],notes:[]})));
+}
+
+
+function exportData(){
+  try{const b=new Blob([JSON.stringify(D)],{type:'application/json'});const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download='study-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}catch(e){alert('Export did not work. Please try again.')}
+}
+function importData(ev){
+  const f=ev.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const j=JSON.parse(r.result);if(!j||!Array.isArray(j.subjects))throw 0;
+    const mg=(a,b)=>(b||[]).forEach(x=>{const i=a.findIndex(y=>y.id===x.id);i<0?a.push(x):a[i]=x});
+    j.subjects.forEach(s=>{const e=D.subjects.find(x=>x.id===s.id);
+      if(!e){D.subjects.push(s);return}
+      e.name=s.name;e.color=s.color;
+      (s.decks||[]).forEach(d=>{const x=e.decks.find(y=>y.id===d.id);if(!x)e.decks.push(d);else{x.name=d.name;mg(x.cards,d.cards)}});
+      mg(e.notes,s.notes)});
+    save();render();alert('Import done!');
+  }catch(e){alert('This file is not a correct backup file.')}};
+  r.readAsText(f);ev.target.value='';
 }
 
 function subject(m){
