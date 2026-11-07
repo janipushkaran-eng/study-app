@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#5f6fff">
 <title>My Study App</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script><script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <style>
 :root{--bg:#f4f3ff;--card:#fff;--tx:#23224a;--mu:#76749c;--ac:#5f6fff;--ac2:#c56cf0;--bd:#e3e1fa;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -54,7 +55,8 @@ textarea{min-height:110px;resize:vertical}
 const COL=['#ff6b6b','#ff9f43','#feca57','#1dd1a1','#48dbfb','#5f6fff','#c56cf0','#ff6bb5'];
 let D={subjects:[]};
 try{D=JSON.parse(localStorage.getItem('studyapp')||'null')||D}catch(e){}
-const save=()=>{try{localStorage.setItem('studyapp',JSON.stringify(D))}catch(e){}};
+const saveLocal=()=>{try{localStorage.setItem('studyapp',JSON.stringify(D))}catch(e){}};
+const save=()=>{saveLocal();sched()};
 const uid=()=>Math.random().toString(36).slice(2,9);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const $=s=>document.querySelector(s);
@@ -94,6 +96,8 @@ function home(m){
   m.innerHTML=D.subjects.length?D.subjects.map(s=>`<div class="item" style="--c:${s.color}" data-id="${s.id}"><div class="t"><b>${esc(s.name)}</b><small>${s.decks.length} flashcard files · ${s.notes.length} notes</small></div><button class="ib" data-e="${s.id}">✎</button></div>`).join(''):`<div class="empty">No subjects yet.<br>Tap “+ Subject” to make your first one, like Maths or Biology.</div>`;
   m.insertAdjacentHTML('beforeend','<div class="row" style="margin-top:24px"><button id="ex" style="background:var(--card);color:var(--tx)">⬇ Export backup</button><button id="im" style="background:var(--card);color:var(--tx)">⬆ Import backup</button></div><input type="file" id="fi" accept=".json,application/json" hidden>');
   $('#ex').onclick=exportData;$('#im').onclick=()=>$('#fi').click();$('#fi').onchange=importData;
+  if(db){m.insertAdjacentHTML('afterbegin',user?`<div class="item" style="--c:#1dd1a1"><div class="t"><b>☁ Synced</b><small>${esc(user.email||'')}</small></div><button class="ib" id="so">Sign out</button></div>`:`<button class="bigbtn" id="si">☁ Sign in with Google to sync</button>`);
+    const si=$('#si'),so=$('#so');if(si)si.onclick=signIn;if(so)so.onclick=()=>firebase.auth().signOut()}
   m.querySelectorAll('.item').forEach(e=>e.onclick=ev=>{if(ev.target.dataset.e)return;go({v:'subject',s:e.dataset.id,tab:'cards'})});
   m.querySelectorAll('[data-e]').forEach(e=>e.onclick=()=>{const s=D.subjects.find(x=>x.id===e.dataset.e);
     modal('Edit subject',[{label:'Subject name',val:s.name},{color:1,val:s.color}],v=>{s.name=v[0].trim();s.color=v[1]});
@@ -168,11 +172,61 @@ function study(m){
 
 function note(m){
   const s=S(),n=s.notes.find(x=>x.id===st.n);fab();
-  head('Note',()=>{if(!n.title&&!n.text)s.notes=s.notes.filter(x=>x!==n);save();go({v:'subject',tab:'notes'})});
+  if(!n){go({v:'subject',tab:'notes'});return}
+  const cur=()=>{const q=S();return q&&q.notes.find(x=>x.id===st.n)};
+  head('Note',()=>{const c=cur();if(c&&!c.title&&!c.text)S().notes=S().notes.filter(x=>x!==c);save();go({v:'subject',tab:'notes'})});
   m.innerHTML=`<input id="nt" placeholder="Title" value="${esc(n.title)}" style="font-weight:700;margin-bottom:12px"><textarea id="nb" class="ed" placeholder="Type your notes here...">${esc(n.text)}</textarea>`;
-  $('#nt').oninput=e=>{n.title=e.target.value;save()};
-  $('#nb').oninput=e=>{n.text=e.target.value;save()};
+  $('#nt').oninput=e=>{const c=cur();if(c){c.title=e.target.value;save()}};
+  $('#nb').oninput=e=>{const c=cur();if(c){c.text=e.target.value;save()}};
 }
+
+/* ---- Cloud sync (Firebase) ---- */
+const FB={apiKey:"AIzaSyB6wJ6Ay1XsFa6glUwXBr5yvYSi6bRkDYQ",authDomain:"my-study-app-67e81.firebaseapp.com",projectId:"my-study-app-67e81",storageBucket:"my-study-app-67e81.firebasestorage.app",messagingSenderId:"970447966712",appId:"1:970447966712:web:96b93abeb1bba56d4e460d"};
+let user=null,db=null,unsub=null,pushed={},tmr=null,ready=false;
+const col=()=>db.collection('users').doc(user.uid).collection('subjects');
+function signIn(){
+  try{const p=new firebase.auth.GoogleAuthProvider();
+  firebase.auth().signInWithPopup(p).catch(e=>{
+    if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')firebase.auth().signInWithRedirect(p);
+    else if(e.code!=='auth/popup-closed-by-user'&&e.code!=='auth/cancelled-popup-request')alert('Sign in did not work: '+e.code)})}catch(e){alert('No internet. Please try again.')}
+}
+function sched(){clearTimeout(tmr);tmr=setTimeout(push,700)}
+function push(){
+  if(!user||!db||!ready)return;
+  D.subjects.forEach((s,i)=>{s.t=s.t||Date.now()+i;const j=JSON.stringify(s);
+    if(pushed[s.id]!==j){pushed[s.id]=j;col().doc(s.id).set({json:j,t:s.t}).catch(()=>{delete pushed[s.id]})}});
+  Object.keys(pushed).forEach(id=>{if(!D.subjects.find(x=>x.id===id)){delete pushed[id];col().doc(id).delete().catch(()=>{})}});
+}
+function refresh(){
+  if(st.s&&!S())st={v:'home',tab:'cards'};
+  else if(st.v==='deck'&&!K())st={v:'subject',s:st.s,tab:'cards'};
+  const a=document.activeElement;
+  if($('#ov').innerHTML||(a&&(a.tagName==='TEXTAREA'||a.tagName==='INPUT')&&st.v==='note'))return;
+  render();
+}
+function listen(){
+  if(unsub){unsub();unsub=null}
+  pushed={};ready=false;
+  if(!user||!db)return;
+  unsub=col().onSnapshot(snap=>{
+    ready=true;let ch=false;
+    snap.docChanges().forEach(c=>{
+      if(c.doc.metadata.hasPendingWrites)return;
+      const id=c.doc.id;
+      if(c.type==='removed'){const i=D.subjects.findIndex(x=>x.id===id);if(i>=0){D.subjects.splice(i,1);ch=true}delete pushed[id];return}
+      let s;try{s=JSON.parse(c.doc.data().json)}catch(e){return}
+      const i=D.subjects.findIndex(x=>x.id===id);
+      if(i<0)D.subjects.push(s);else D.subjects[i]=s;
+      pushed[id]=c.doc.data().json;ch=true});
+    if(ch){D.subjects.sort((a,b)=>(a.t||0)-(b.t||0));saveLocal();refresh()}
+    sched();
+  },e=>{});
+}
+try{
+  firebase.initializeApp(FB);db=firebase.firestore();
+  db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+  firebase.auth().onAuthStateChanged(u=>{user=u;listen();if(st.v==='home')render()});
+}catch(e){db=null}
 render();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script></body></html>
